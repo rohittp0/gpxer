@@ -1,6 +1,87 @@
-# CLAUDE.md — GPX Editor + Viewer (Flutter, Android/iOS only)
+# CLAUDE.md
 
-## Project goal
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Development Commands
+
+### Running the app
+```bash
+# Run on connected device/emulator (debug mode)
+flutter run
+
+# Run on specific device
+flutter devices  # List available devices
+flutter run -d <device-id>
+
+# Run in release mode
+flutter run --release
+```
+
+### Testing
+```bash
+# Run all tests
+flutter test
+
+# Run a specific test file
+flutter test test/path/to/test_file.dart
+
+# Run tests with coverage
+flutter test --coverage
+
+# Run integration tests (requires connected device)
+flutter test integration_test
+```
+
+### Code Quality
+```bash
+# Analyze code for issues
+flutter analyze
+
+# Format code
+dart format lib test
+
+# Check formatting without applying
+dart format --set-exit-if-changed lib test
+```
+
+### Dependencies
+```bash
+# Get dependencies
+flutter pub get
+
+# Upgrade dependencies
+flutter pub upgrade
+
+# Check for outdated packages
+flutter pub outdated
+```
+
+### Build
+```bash
+# Build APK (Android)
+flutter build apk
+
+# Build App Bundle (Android)
+flutter build appbundle
+
+# Build iOS app (requires macOS)
+flutter build ios
+```
+
+### Clean
+```bash
+# Clean build artifacts
+flutter clean
+
+# Full clean (removes build + .dart_tool + .packages)
+flutter clean && flutter pub get
+```
+
+---
+
+## GPX Editor + Viewer (Flutter, Android/iOS only)
+
+### Project goal
 
 Build a Flutter app that can:
 
