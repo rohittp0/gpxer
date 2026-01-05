@@ -62,14 +62,12 @@ class DeletePointCommand extends EditCommand {
 
   @override
   GpxDocument execute(GpxDocument doc) {
-    // TODO: Implement point deletion in GpxDocument
-    return doc.copyWith(isDirty: true);
+    return doc.deletePoint(index);
   }
 
   @override
   GpxDocument undo(GpxDocument doc) {
-    // TODO: Implement point insertion in GpxDocument
-    return doc.copyWith(isDirty: true);
+    return doc.insertPoint(index, location.latitude, location.longitude, elevation);
   }
 }
 
@@ -87,14 +85,12 @@ class InsertPointCommand extends EditCommand {
 
   @override
   GpxDocument execute(GpxDocument doc) {
-    // TODO: Implement point insertion in GpxDocument
-    return doc.copyWith(isDirty: true);
+    return doc.insertPoint(index, location.latitude, location.longitude, elevation);
   }
 
   @override
   GpxDocument undo(GpxDocument doc) {
-    // TODO: Implement point deletion in GpxDocument
-    return doc.copyWith(isDirty: true);
+    return doc.deletePoint(index);
   }
 }
 

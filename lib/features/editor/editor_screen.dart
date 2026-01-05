@@ -7,6 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:gpxer/app/providers.dart';
 import 'package:gpxer/domain/models/edit_command.dart';
 import 'package:gpxer/domain/services/undo_redo_service.dart';
+import 'package:gpxer/features/editor/point_actions_sheet.dart';
+import 'package:gpxer/features/editor/dialogs/edit_coordinates_dialog.dart';
+import 'package:gpxer/features/editor/dialogs/confirm_delete_dialog.dart';
+import 'package:gpxer/features/editor/dialogs/insert_point_dialog.dart';
+import 'package:gpxer/features/editor/add_point_sheet.dart';
 
 /// Editor screen - Edit GPX with drag markers and point actions
 class EditorScreen extends ConsumerStatefulWidget {
@@ -91,6 +96,11 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
                 child: Text('No points to edit'),
               )
             : _buildMap(points, elevations),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _showAddMode(points),
+          icon: const Icon(Icons.add_location),
+          label: const Text('Add'),
+        ),
       ),
     );
   }
@@ -174,10 +184,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           _originalPositions.remove(index);
         },
         onLongPress: (point) {
-          // TODO: Phase 7 - Open point actions bottom sheet
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Long press on point #${index + 1}')),
-          );
+          _showPointActions(index, point, elevation);
         },
       );
     });
@@ -227,6 +234,166 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Point moved')),
     );
+  }
+
+  /// Show Add Mode sheet
+  void _showAddMode(List<LatLng> points) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => AddPointSheet(
+        existingPoints: points,
+        onInsert: (index, location, elevation) {
+          _handleInsertPointAtIndex(index, location, elevation);
+        },
+      ),
+    );
+  }
+
+  /// Handle insert point at specific index (from Add Mode)
+  void _handleInsertPointAtIndex(int index, LatLng location, double? elevation) {
+    final doc = ref.read(gpxDocumentProvider);
+    if (doc == null) return;
+
+    final undoRedoService = ref.read(undoRedoServiceProvider);
+    final command = InsertPointCommand(
+      index: index,
+      location: location,
+      elevation: elevation,
+    );
+
+    final updatedDoc = undoRedoService.executeCommand(command, doc);
+    ref.read(gpxDocumentProvider.notifier).state = updatedDoc;
+
+    // Update undo/redo state
+    ref.read(undoRedoStateProvider.notifier).update(
+          undoRedoService.canUndo,
+          undoRedoService.canRedo,
+        );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Point inserted')),
+    );
+  }
+
+  /// Show point actions bottom sheet
+  void _showPointActions(int index, LatLng point, double? elevation) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => PointActionsSheet(
+        pointIndex: index,
+        onEditCoordinates: () => _handleEditCoordinates(index, point, elevation),
+        onDelete: () => _handleDeletePoint(index, point, elevation),
+        onInsertBefore: () => _handleInsertPoint(index, isAfter: false),
+        onInsertAfter: () => _handleInsertPoint(index + 1, isAfter: true),
+      ),
+    );
+  }
+
+  /// Handle edit coordinates action
+  void _handleEditCoordinates(int index, LatLng currentPoint, double? currentElevation) async {
+    final result = await showDialog<EditCoordinatesResult>(
+      context: context,
+      builder: (context) => EditCoordinatesDialog(
+        currentLocation: currentPoint,
+        currentElevation: currentElevation,
+      ),
+    );
+
+    if (result != null && mounted) {
+      final doc = ref.read(gpxDocumentProvider);
+      if (doc == null) return;
+
+      final undoRedoService = ref.read(undoRedoServiceProvider);
+      final command = EditCoordinatesCommand(
+        index: index,
+        oldLocation: currentPoint,
+        newLocation: result.location,
+        oldElevation: currentElevation,
+        newElevation: result.elevation,
+      );
+
+      final updatedDoc = undoRedoService.executeCommand(command, doc);
+      ref.read(gpxDocumentProvider.notifier).state = updatedDoc;
+
+      // Update undo/redo state
+      ref.read(undoRedoStateProvider.notifier).update(
+            undoRedoService.canUndo,
+            undoRedoService.canRedo,
+          );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Point updated')),
+      );
+    }
+  }
+
+  /// Handle delete point action
+  void _handleDeletePoint(int index, LatLng point, double? elevation) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => ConfirmDeleteDialog(pointIndex: index),
+    );
+
+    if (confirmed == true && mounted) {
+      final doc = ref.read(gpxDocumentProvider);
+      if (doc == null) return;
+
+      final undoRedoService = ref.read(undoRedoServiceProvider);
+      final command = DeletePointCommand(
+        index: index,
+        location: point,
+        elevation: elevation,
+      );
+
+      final updatedDoc = undoRedoService.executeCommand(command, doc);
+      ref.read(gpxDocumentProvider.notifier).state = updatedDoc;
+
+      // Update undo/redo state
+      ref.read(undoRedoStateProvider.notifier).update(
+            undoRedoService.canUndo,
+            undoRedoService.canRedo,
+          );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Point deleted')),
+      );
+    }
+  }
+
+  /// Handle insert point action (before or after)
+  void _handleInsertPoint(int insertIndex, {required bool isAfter}) async {
+    final result = await showDialog<InsertPointResult>(
+      context: context,
+      builder: (context) => InsertPointDialog(
+        title: isAfter ? 'Insert after point #$insertIndex' : 'Insert before point #${insertIndex + 1}',
+      ),
+    );
+
+    if (result != null && mounted) {
+      final doc = ref.read(gpxDocumentProvider);
+      if (doc == null) return;
+
+      final undoRedoService = ref.read(undoRedoServiceProvider);
+      final command = InsertPointCommand(
+        index: insertIndex,
+        location: result.location,
+        elevation: result.elevation,
+      );
+
+      final updatedDoc = undoRedoService.executeCommand(command, doc);
+      ref.read(gpxDocumentProvider.notifier).state = updatedDoc;
+
+      // Update undo/redo state
+      ref.read(undoRedoStateProvider.notifier).update(
+            undoRedoService.canUndo,
+            undoRedoService.canRedo,
+          );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Point inserted')),
+      );
+    }
   }
 
   /// Handle undo button press
