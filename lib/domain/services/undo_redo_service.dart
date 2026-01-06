@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gpxer/domain/models/edit_command.dart';
-import 'package:gpxer/domain/models/gpx_document.dart';
+import 'package:routesmith/domain/models/edit_command.dart';
+import 'package:routesmith/domain/models/gpx_document.dart';
 
 /// Service for managing undo/redo operations
 class UndoRedoService {

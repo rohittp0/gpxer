@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gpxer/app/router.dart';
-import 'package:gpxer/app/theme.dart';
-import 'package:gpxer/data/recent_files_store.dart';
+import 'package:routesmith/app/router.dart';
+import 'package:routesmith/app/theme.dart';
+import 'package:routesmith/data/recent_files_store.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

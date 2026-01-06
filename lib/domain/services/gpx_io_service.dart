@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart'; // For compute (isolate support) and Uint8List
 import 'package:gpx/gpx.dart';
 import 'package:uuid/uuid.dart';
-import 'package:gpxer/domain/models/gpx_document.dart';
-import 'package:gpxer/domain/models/active_path.dart';
+import 'package:routesmith/domain/models/gpx_document.dart';
+import 'package:routesmith/domain/models/active_path.dart';
 
 /// Service for GPX file I/O operations
 class GpxIoService {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:gpxer/app/providers.dart';
+import 'package:routesmith/app/providers.dart';
 
 /// Bottom sheet for viewer screen showing stats and actions
 class ViewerBottomSheet extends ConsumerWidget {

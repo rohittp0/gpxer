@@ -4,15 +4,15 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_dragmarker/flutter_map_dragmarker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:go_router/go_router.dart';
-import 'package:gpxer/app/providers.dart';
-import 'package:gpxer/domain/models/edit_command.dart';
-import 'package:gpxer/domain/services/undo_redo_service.dart';
-import 'package:gpxer/domain/services/gpx_stats_service.dart';
-import 'package:gpxer/features/editor/point_actions_sheet.dart';
-import 'package:gpxer/features/editor/dialogs/edit_coordinates_dialog.dart';
-import 'package:gpxer/features/editor/dialogs/confirm_delete_dialog.dart';
-import 'package:gpxer/features/editor/dialogs/insert_point_dialog.dart';
-import 'package:gpxer/features/editor/add_point_sheet.dart';
+import 'package:routesmith/app/providers.dart';
+import 'package:routesmith/domain/models/edit_command.dart';
+import 'package:routesmith/domain/services/undo_redo_service.dart';
+import 'package:routesmith/domain/services/gpx_stats_service.dart';
+import 'package:routesmith/features/editor/point_actions_sheet.dart';
+import 'package:routesmith/features/editor/dialogs/edit_coordinates_dialog.dart';
+import 'package:routesmith/features/editor/dialogs/confirm_delete_dialog.dart';
+import 'package:routesmith/features/editor/dialogs/insert_point_dialog.dart';
+import 'package:routesmith/features/editor/add_point_sheet.dart';
 
 /// Editor screen - Edit GPX with drag markers and point actions
 class EditorScreen extends ConsumerStatefulWidget {

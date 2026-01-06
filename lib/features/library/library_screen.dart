@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:gpxer/app/icons.dart';
-import 'package:gpxer/app/providers.dart';
-import 'package:gpxer/data/recent_files_store.dart';
-import 'package:gpxer/features/library/recent_files_controller.dart';
+import 'package:routesmith/app/icons.dart';
+import 'package:routesmith/app/providers.dart';
+import 'package:routesmith/data/recent_files_store.dart';
+import 'package:routesmith/features/library/recent_files_controller.dart';
 
 /// Library screen - Home screen for opening and creating GPX files
 class LibraryScreen extends ConsumerWidget {

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:gpx/gpx.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:gpxer/domain/models/active_path.dart';
+import 'package:routesmith/domain/models/active_path.dart';
 
 /// Represents a GPX document with metadata and active path state
 class GpxDocument {

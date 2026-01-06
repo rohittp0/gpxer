@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:go_router/go_router.dart';
-import 'package:gpxer/app/providers.dart';
-import 'package:gpxer/domain/services/gpx_stats_service.dart';
-import 'package:gpxer/features/viewer/viewer_bottom_sheet.dart';
-import 'package:gpxer/features/viewer/point_callout.dart';
+import 'package:routesmith/app/providers.dart';
+import 'package:routesmith/domain/services/gpx_stats_service.dart';
+import 'package:routesmith/features/viewer/viewer_bottom_sheet.dart';
+import 'package:routesmith/features/viewer/point_callout.dart';
 
 /// Viewer screen - Display GPX on map with markers and polyline
 class ViewerScreen extends ConsumerStatefulWidget {

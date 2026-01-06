@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gpxer/domain/services/gpx_stats_service.dart';
-import 'package:gpxer/domain/models/gpx_document.dart';
-import 'package:gpxer/domain/models/active_path.dart';
+import 'package:routesmith/domain/services/gpx_stats_service.dart';
+import 'package:routesmith/domain/models/gpx_document.dart';
+import 'package:routesmith/domain/models/active_path.dart';
 import 'package:gpx/gpx.dart';
 import 'dart:typed_data';
 

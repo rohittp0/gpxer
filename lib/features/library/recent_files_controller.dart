@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gpxer/data/recent_files_store.dart';
+import 'package:routesmith/data/recent_files_store.dart';
 
 /// Controller for managing recent files
 class RecentFilesController extends AsyncNotifier<List<RecentFileEntry>> {

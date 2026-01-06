@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gpxer/main.dart';
-import 'package:gpxer/data/recent_files_store.dart';
+import 'package:routesmith/main.dart';
+import 'package:routesmith/data/recent_files_store.dart';
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:gpxer/app/providers.dart';
-import 'package:gpxer/features/details/elevation_chart.dart';
+import 'package:routesmith/app/providers.dart';
+import 'package:routesmith/features/details/elevation_chart.dart';
 
 /// Details screen - Show GPX stats and elevation profile
 class DetailsScreen extends ConsumerWidget {

@@ -1,7 +1,7 @@
 import 'package:latlong2/latlong.dart';
-import 'package:gpxer/domain/models/gpx_document.dart';
+import 'package:routesmith/domain/models/gpx_document.dart';
 import 'package:gpx/gpx.dart';
-import 'package:gpxer/domain/models/active_path.dart';
+import 'package:routesmith/domain/models/active_path.dart';
 
 /// Service for editing GPX documents
 class GpxEditService {

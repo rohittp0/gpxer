@@ -1,5 +1,5 @@
 import 'package:latlong2/latlong.dart';
-import 'package:gpxer/domain/models/gpx_document.dart';
+import 'package:routesmith/domain/models/gpx_document.dart';
 
 /// Abstract base class for edit commands (Command pattern for undo/redo)
 abstract class EditCommand {

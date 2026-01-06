@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:gpxer/features/library/library_screen.dart';
-import 'package:gpxer/features/viewer/viewer_screen.dart';
-import 'package:gpxer/features/details/details_screen.dart';
-import 'package:gpxer/features/editor/editor_screen.dart';
-import 'package:gpxer/features/export/export_screen.dart';
+import 'package:routesmith/features/library/library_screen.dart';
+import 'package:routesmith/features/viewer/viewer_screen.dart';
+import 'package:routesmith/features/details/details_screen.dart';
+import 'package:routesmith/features/editor/editor_screen.dart';
+import 'package:routesmith/features/export/export_screen.dart';
 
 /// Application router configuration using GoRouter
 class AppRouter {

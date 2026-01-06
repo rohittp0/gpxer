@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gpxer/domain/models/gpx_document.dart';
-import 'package:gpxer/domain/services/gpx_io_service.dart';
-import 'package:gpxer/domain/services/gpx_stats_service.dart';
-import 'package:gpxer/domain/services/gpx_edit_service.dart';
+import 'package:routesmith/domain/models/gpx_document.dart';
+import 'package:routesmith/domain/services/gpx_io_service.dart';
+import 'package:routesmith/domain/services/gpx_stats_service.dart';
+import 'package:routesmith/domain/services/gpx_edit_service.dart';
 
 /// Global provider for the current GPX document
 final gpxDocumentProvider = StateProvider<GpxDocument?>((ref) => null);
