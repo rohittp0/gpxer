@@ -21,14 +21,14 @@ void main() async {
   );
 }
 
-/// Root application widget for GPX Editor
+/// Root application widget for RouteSmith
 class GPXEditorApp extends StatelessWidget {
   const GPXEditorApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'GPX Editor',
+      title: 'RouteSmith',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,

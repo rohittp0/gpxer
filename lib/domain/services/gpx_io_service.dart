@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart'; // For compute (isolate support) and Uint8List
 import 'package:gpx/gpx.dart';
 import 'package:uuid/uuid.dart';
 import 'package:gpxer/domain/models/gpx_document.dart';
@@ -9,18 +9,16 @@ import 'package:gpxer/domain/models/active_path.dart';
 class GpxIoService {
   final _uuid = const Uuid();
 
-  /// Parse GPX from bytes
+  /// Parse GPX from bytes (uses isolate to avoid blocking UI)
   Future<GpxDocument?> parseGpxFromBytes({
     required Uint8List bytes,
     required String displayName,
     String? sourcePath,
   }) async {
     try {
-      // Decode bytes to UTF-8 string
-      final xmlString = utf8.decode(bytes);
-
-      // Parse GPX using GpxReader
-      final gpx = GpxReader().fromString(xmlString);
+      // Parse in isolate to avoid blocking UI (critical for large files)
+      final gpx = await compute(_parseGpxInIsolate, bytes);
+      if (gpx == null) return null;
 
       // Determine default active path
       final activePath = _determineActivePath(gpx);
@@ -42,6 +40,16 @@ class GpxIoService {
     }
   }
 
+  /// Parse GPX in isolate (static top-level function required by compute)
+  static Gpx? _parseGpxInIsolate(Uint8List bytes) {
+    try {
+      final xmlString = utf8.decode(bytes);
+      return GpxReader().fromString(xmlString);
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Create a new empty GPX document
   GpxDocument createNewGpx({
     required String displayName,
@@ -49,7 +57,7 @@ class GpxIoService {
   }) {
     final gpx = Gpx();
     gpx.version = '1.1';
-    gpx.creator = 'GPX Editor';
+    gpx.creator = 'RouteSmith';
     gpx.metadata = Metadata();
     gpx.metadata!.name = displayName;
     gpx.metadata!.time = DateTime.now();

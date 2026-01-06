@@ -79,7 +79,7 @@ flutter clean && flutter pub get
 
 ---
 
-## GPX Editor + Viewer (Flutter, Android/iOS only)
+## RouteSmith + Viewer (Flutter, Android/iOS only)
 
 ### Project goal
 
@@ -299,7 +299,7 @@ Use `GoRouter` navigation (`context.go(...)`). ([Dart packages][13])
 
 ### Layout
 
-* AppBar title: `GPX Editor`
+* AppBar title: `RouteSmith`
 * Body:
 
   * Primary button: **Open GPX**
@@ -813,6 +813,152 @@ Automate scenarios:
 7. Undo/redo
 8. Export screen: Save As + Share
 9. Testing + performance tuning for large tracks
+
+---
+
+## Future Performance Optimizations (Currently Not Needed)
+
+**Note**: The app currently performs well with large files (5000+ points) after implementing:
+- Marker density limits (500 markers max in editor/viewer)
+- Elevation chart downsampling (500 points max)
+- Point/elevation caching in GpxDocument
+- Stats computation caching with Provider.family
+- Isolate-based GPX parsing
+
+The following optimizations are documented for future use if needed for extremely large files (10,000+ points):
+
+### Advanced Optimization 1: Viewport-Based Marker Rendering
+
+**When to use**: If users zoom in on large files and still experience lag from off-screen markers
+
+**Implementation**: Filter markers to only render those within the current viewport plus a buffer zone
+
+```dart
+class _ViewerScreenState extends ConsumerState<ViewerScreen> {
+  final _mapController = MapController();
+  LatLngBounds? _visibleBounds;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController.mapEventStream.listen(_onMapEvent);
+  }
+
+  void _onMapEvent(MapEvent event) {
+    if (event is MapEventMove || event is MapEventRotate) {
+      setState(() {
+        _visibleBounds = _mapController.camera.visibleBounds;
+      });
+    }
+  }
+
+  List<Marker> _getVisibleMarkers(List<LatLng> allPoints) {
+    if (_visibleBounds == null) return _getAllMarkers(allPoints);
+
+    // Add 20% buffer around visible bounds
+    final buffer = 0.2;
+    final latRange = _visibleBounds!.north - _visibleBounds!.south;
+    final lonRange = _visibleBounds!.east - _visibleBounds!.west;
+
+    final expandedBounds = LatLngBounds(
+      LatLng(_visibleBounds!.south - latRange * buffer,
+             _visibleBounds!.west - lonRange * buffer),
+      LatLng(_visibleBounds!.north + latRange * buffer,
+             _visibleBounds!.east + lonRange * buffer),
+    );
+
+    return allPoints
+        .asMap()
+        .entries
+        .where((entry) => expandedBounds.contains(entry.value))
+        .map((entry) => _createMarker(entry.key, entry.value))
+        .toList();
+  }
+
+  // In FlutterMap options:
+  FlutterMap(
+    options: MapOptions(
+      initialCenter: center,
+      initialZoom: zoom,
+    ),
+    mapController: _mapController,
+    children: [
+      TileLayer(...),
+      PolylineLayer(...),
+      MarkerLayer(markers: _getVisibleMarkers(points)),
+    ],
+  )
+}
+```
+
+**Files to modify**:
+- `lib/features/viewer/viewer_screen.dart`
+- `lib/features/editor/editor_screen.dart` (for DragMarkers layer)
+
+### Advanced Optimization 2: Incremental Polyline Rendering
+
+**When to use**: If polyline redraws cause frame drops during edits on very large files
+
+**Implementation**: Split polyline into segments that can be cached and only redrawn when modified
+
+```dart
+List<Polyline> _buildPolylineSegments(List<LatLng> points) {
+  const segmentSize = 500;
+  final polylines = <Polyline>[];
+
+  for (int i = 0; i < points.length; i += segmentSize) {
+    final end = (i + segmentSize < points.length)
+        ? i + segmentSize
+        : points.length;
+
+    final segmentPoints = points.sublist(i, end);
+
+    polylines.add(Polyline(
+      points: segmentPoints,
+      strokeWidth: 4.0,
+      color: Colors.blue,
+    ));
+  }
+
+  return polylines;
+}
+
+// Usage:
+PolylineLayer(
+  polylines: _buildPolylineSegments(points),
+)
+```
+
+**Benefit**: Flutter can cache rendered polyline segments. When a point is edited, only the affected segment needs to be redrawn.
+
+**Files to modify**:
+- `lib/features/viewer/viewer_screen.dart`
+- `lib/features/editor/editor_screen.dart`
+
+### Advanced Optimization 3: Lazy Elevation Data Loading
+
+**When to use**: If initial file loading is slow due to elevation data extraction
+
+**Implementation**: Make elevation extraction truly lazy, only computing when Details screen is opened
+
+```dart
+// In GpxDocument, ensure getActivePathElevations() is only called by:
+// - Details screen
+// - Elevation chart
+
+// Current implementation already has caching, but could add:
+bool _elevationsRequested = false;
+
+List<double?> getActivePathElevations() {
+  if (!_elevationsRequested) {
+    _elevationsRequested = true;
+    // Log or track that elevations are now needed
+  }
+  // ... existing cached implementation
+}
+```
+
+**Benefit**: Marginal - elevations are already cached. This would only help if parsing elevation data from GPX is expensive.
 
 ---
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Application theme configuration for GPX Editor
+/// Application theme configuration for RouteSmith
 /// Uses Material 3 design system
 class AppTheme {
   /// Private constructor to prevent instantiation

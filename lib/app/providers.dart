@@ -22,8 +22,19 @@ final gpxEditServiceProvider = Provider<GpxEditService>((ref) {
   return GpxEditService();
 });
 
-/// Provider for current GPX stats (computed from document)
+/// Provider for current GPX stats (computed from document with caching)
 final gpxStatsProvider = Provider((ref) {
+  final doc = ref.watch(gpxDocumentProvider);
+  if (doc == null) return null;
+
+  // Cache based on document ID + dirty state
+  // Stats only recompute when document changes or is modified
+  final cacheKey = '${doc.id}_${doc.isDirty}';
+  return ref.watch(_cachedStatsProvider(cacheKey));
+});
+
+/// Internal cached stats provider using Provider.family for memoization
+final _cachedStatsProvider = Provider.family<GpxStats?, String>((ref, cacheKey) {
   final doc = ref.watch(gpxDocumentProvider);
   if (doc == null) return null;
 

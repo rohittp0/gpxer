@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:convert'; // For utf8.encode
+import 'dart:typed_data'; // For Uint8List
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +57,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/editor'),
+          onPressed: () => context.pop(),
         ),
         title: const Text('Export'),
       ),
@@ -122,28 +124,39 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
       // Generate GPX XML
       final xml = GpxWriter().asString(doc.gpx, pretty: _prettyFormat);
 
-      // Get filename
+      // Convert XML to bytes (CRITICAL: Android/iOS require bytes parameter)
+      final bytes = Uint8List.fromList(utf8.encode(xml));
+
+      // Get and sanitize filename
       String fileName = _fileNameController.text.trim();
-      if (!fileName.endsWith('.gpx')) {
-        fileName = '$fileName.gpx';
+
+      // Remove any existing .gpx extension (case-insensitive) to avoid double extensions
+      fileName = fileName.replaceAll(RegExp(r'\.gpx$', caseSensitive: false), '');
+
+      // Remove trailing dots and spaces
+      fileName = fileName.replaceAll(RegExp(r'[\s.]+$'), '');
+
+      // Add .gpx extension
+      fileName = '$fileName.gpx';
+
+      // Ensure filename is not empty
+      if (fileName == '.gpx') {
+        fileName = 'untitled.gpx';
       }
 
-      // Show save dialog
+      // Show save dialog with bytes parameter
       final outputPath = await FilePicker.platform.saveFile(
         dialogTitle: 'Save GPX File',
         fileName: fileName,
         type: FileType.custom,
         allowedExtensions: ['gpx'],
+        bytes: bytes, // FIXED: Pass bytes for Android/iOS
       );
 
       if (outputPath == null) {
         // User canceled
         return;
       }
-
-      // Write file
-      final file = File(outputPath);
-      await file.writeAsString(xml);
 
       // Mark document as clean and update source path
       final updatedDoc = doc.copyWith(
@@ -173,10 +186,21 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
       // Generate GPX XML
       final xml = GpxWriter().asString(doc.gpx, pretty: _prettyFormat);
 
-      // Get filename
+      // Get and sanitize filename
       String fileName = _fileNameController.text.trim();
-      if (!fileName.endsWith('.gpx')) {
-        fileName = '$fileName.gpx';
+
+      // Remove any existing .gpx extension (case-insensitive) to avoid double extensions
+      fileName = fileName.replaceAll(RegExp(r'\.gpx$', caseSensitive: false), '');
+
+      // Remove trailing dots and spaces
+      fileName = fileName.replaceAll(RegExp(r'[\s.]+$'), '');
+
+      // Add .gpx extension
+      fileName = '$fileName.gpx';
+
+      // Ensure filename is not empty
+      if (fileName == '.gpx') {
+        fileName = 'untitled.gpx';
       }
 
       // Create temp file

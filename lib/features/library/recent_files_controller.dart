@@ -24,6 +24,14 @@ class RecentFilesController extends AsyncNotifier<List<RecentFileEntry>> {
     // Refresh the list
     ref.invalidateSelf();
   }
+
+  /// Remove a specific file from recent files
+  Future<void> removeRecent(RecentFileEntry entry) async {
+    final store = ref.read(recentFilesStoreProvider);
+    await store.removeRecentFile(entry);
+    // Refresh the list
+    ref.invalidateSelf();
+  }
 }
 
 /// Provider for recent files controller

@@ -64,6 +64,56 @@ class GpxStatsService {
   /// Distance calculator using Vincenty algorithm (accurate)
   final _distance = const Distance();
 
+  /// Calculate bounding box from a list of points
+  static GpxBounds? calculateBounds(List<LatLng> points) {
+    if (points.isEmpty) return null;
+
+    double minLat = points[0].latitude;
+    double maxLat = points[0].latitude;
+    double minLon = points[0].longitude;
+    double maxLon = points[0].longitude;
+
+    for (final point in points) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLon) minLon = point.longitude;
+      if (point.longitude > maxLon) maxLon = point.longitude;
+    }
+
+    return GpxBounds(
+      minLat: minLat,
+      maxLat: maxLat,
+      minLon: minLon,
+      maxLon: maxLon,
+    );
+  }
+
+  /// Calculate center point from a list of points
+  static LatLng calculateCenter(List<LatLng> points) {
+    final bounds = calculateBounds(points);
+    return bounds?.center ?? LatLng(0, 0);
+  }
+
+  /// Calculate appropriate zoom level based on point spread
+  static double calculateZoom(List<LatLng> points) {
+    if (points.length < 2) return 13.0;
+
+    final bounds = calculateBounds(points);
+    if (bounds == null) return 13.0;
+
+    final latDiff = bounds.maxLat - bounds.minLat;
+    final lonDiff = bounds.maxLon - bounds.minLon;
+    final maxDiff = latDiff > lonDiff ? latDiff : lonDiff;
+
+    // Zoom level calculation based on coordinate span
+    if (maxDiff > 10) return 5.0;
+    if (maxDiff > 5) return 7.0;
+    if (maxDiff > 1) return 9.0;
+    if (maxDiff > 0.5) return 11.0;
+    if (maxDiff > 0.1) return 13.0;
+    return 15.0;
+  }
+
   /// Compute comprehensive statistics for a GPX document
   GpxStats computeStats(GpxDocument doc) {
     final points = doc.getActivePathPoints();
@@ -105,28 +155,8 @@ class GpxStatsService {
       descent = totalDescent;
     }
 
-    // Compute bounds
-    GpxBounds? bounds;
-    if (points.isNotEmpty) {
-      double minLat = points[0].latitude;
-      double maxLat = points[0].latitude;
-      double minLon = points[0].longitude;
-      double maxLon = points[0].longitude;
-
-      for (final point in points) {
-        if (point.latitude < minLat) minLat = point.latitude;
-        if (point.latitude > maxLat) maxLat = point.latitude;
-        if (point.longitude < minLon) minLon = point.longitude;
-        if (point.longitude > maxLon) maxLon = point.longitude;
-      }
-
-      bounds = GpxBounds(
-        minLat: minLat,
-        maxLat: maxLat,
-        minLon: minLon,
-        maxLon: maxLon,
-      );
-    }
+    // Compute bounds using static helper
+    final bounds = calculateBounds(points);
 
     return GpxStats(
       pointCount: points.length,

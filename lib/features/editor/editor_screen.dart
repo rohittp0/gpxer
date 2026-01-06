@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:gpxer/app/providers.dart';
 import 'package:gpxer/domain/models/edit_command.dart';
 import 'package:gpxer/domain/services/undo_redo_service.dart';
+import 'package:gpxer/domain/services/gpx_stats_service.dart';
 import 'package:gpxer/features/editor/point_actions_sheet.dart';
 import 'package:gpxer/features/editor/dialogs/edit_coordinates_dialog.dart';
 import 'package:gpxer/features/editor/dialogs/confirm_delete_dialog.dart';
@@ -52,7 +53,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         if (!didPop && doc.isDirty) {
           final shouldDiscard = await _showDiscardDialog(context);
           if (shouldDiscard == true && context.mounted) {
-            context.go('/');
+            context.pop();
           }
         }
       },
@@ -64,10 +65,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
               if (doc.isDirty) {
                 final shouldDiscard = await _showDiscardDialog(context);
                 if (shouldDiscard == true && context.mounted) {
-                  context.go('/');
+                  context.pop();
                 }
               } else {
-                context.go('/');
+                context.pop();
               }
             },
           ),
@@ -87,7 +88,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             ),
             IconButton(
               icon: const Icon(Icons.check),
-              onPressed: () => context.go('/export'),
+              onPressed: () => context.push('/export'),
             ),
           ],
         ),
@@ -95,7 +96,28 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             ? const Center(
                 child: Text('No points to edit'),
               )
-            : _buildMap(points, elevations),
+            : Column(
+                children: [
+                  if (points.length > 500)
+                    Container(
+                      color: Colors.blue[100],
+                      padding: const EdgeInsets.all(8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Showing ~${(points.length / ((points.length / 500).ceil())).ceil()} of ${points.length} markers for better performance',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Expanded(child: _buildMap(points, elevations)),
+                ],
+              ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showAddMode(points),
           icon: const Icon(Icons.add_location),
@@ -142,7 +164,16 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   /// Build draggable markers for all path points
   List<DragMarker> _buildDragMarkers(
       List<LatLng> points, List<double?> elevations) {
-    return List.generate(points.length, (index) {
+    final markers = <DragMarker>[];
+    final shouldShowAll = points.length <= 500;
+    final step = shouldShowAll ? 1 : (points.length / 500).ceil();
+
+    for (int index = 0; index < points.length; index++) {
+      final isStartOrEnd = index == 0 || index == points.length - 1;
+      if (!isStartOrEnd && !shouldShowAll && index % step != 0) {
+        continue; // Skip this marker for performance
+      }
+
       final point = points[index];
       final elevation = index < elevations.length ? elevations[index] : null;
 
@@ -156,7 +187,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         color = Colors.blue;
       }
 
-      return DragMarker(
+      markers.add(DragMarker(
         point: point,
         size: const Size(40, 40),
         offset: const Offset(0, -20),
@@ -186,8 +217,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         onLongPress: (point) {
           _showPointActions(index, point, elevation);
         },
-      );
-    });
+      ));
+    }
+    return markers;
   }
 
   /// Update point position in real-time (for live polyline update)
@@ -449,49 +481,11 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
   /// Calculate center point from bounds
   LatLng _calculateCenter(List<LatLng> points) {
-    if (points.isEmpty) return LatLng(0, 0);
-
-    double minLat = points[0].latitude;
-    double maxLat = points[0].latitude;
-    double minLon = points[0].longitude;
-    double maxLon = points[0].longitude;
-
-    for (final point in points) {
-      if (point.latitude < minLat) minLat = point.latitude;
-      if (point.latitude > maxLat) maxLat = point.latitude;
-      if (point.longitude < minLon) minLon = point.longitude;
-      if (point.longitude > maxLon) maxLon = point.longitude;
-    }
-
-    return LatLng((minLat + maxLat) / 2, (minLon + maxLon) / 2);
+    return GpxStatsService.calculateCenter(points);
   }
 
   /// Calculate appropriate zoom level
   double _calculateZoom(List<LatLng> points) {
-    if (points.length < 2) return 13.0;
-
-    double minLat = points[0].latitude;
-    double maxLat = points[0].latitude;
-    double minLon = points[0].longitude;
-    double maxLon = points[0].longitude;
-
-    for (final point in points) {
-      if (point.latitude < minLat) minLat = point.latitude;
-      if (point.latitude > maxLat) maxLat = point.latitude;
-      if (point.longitude < minLon) minLon = point.longitude;
-      if (point.longitude > maxLon) maxLon = point.longitude;
-    }
-
-    final latDiff = maxLat - minLat;
-    final lonDiff = maxLon - minLon;
-    final maxDiff = latDiff > lonDiff ? latDiff : lonDiff;
-
-    // Simple zoom calculation
-    if (maxDiff > 10) return 5.0;
-    if (maxDiff > 5) return 7.0;
-    if (maxDiff > 1) return 9.0;
-    if (maxDiff > 0.5) return 11.0;
-    if (maxDiff > 0.1) return 13.0;
-    return 15.0;
+    return GpxStatsService.calculateZoom(points);
   }
 }

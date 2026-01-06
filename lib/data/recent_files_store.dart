@@ -101,6 +101,19 @@ class RecentFilesStore {
   Future<void> clearRecent() async {
     await _prefs.remove(_key);
   }
+
+  /// Remove a specific file from recent files
+  Future<void> removeRecentFile(RecentFileEntry entry) async {
+    final recent = await getRecentFiles();
+
+    // Remove entry with matching path
+    recent.removeWhere((e) =>
+        e.path != null && entry.path != null && e.path == entry.path);
+
+    // Save to preferences
+    final jsonList = recent.map((e) => e.toJson()).toList();
+    await _prefs.setString(_key, jsonEncode(jsonList));
+  }
 }
 
 /// Provider for SharedPreferences instance

@@ -42,10 +42,23 @@ class ElevationChart extends StatelessWidget {
       );
     }
 
-    // Prepare data points for chart
+    // Downsample to max 500 points for performance
+    const maxChartPoints = 500;
+    final step = validElevations.length > maxChartPoints
+        ? (validElevations.length / maxChartPoints).ceil()
+        : 1;
+
     final spots = <FlSpot>[];
-    for (int i = 0; i < validElevations.length; i++) {
+    for (int i = 0; i < validElevations.length; i += step) {
       spots.add(FlSpot(i.toDouble(), validElevations[i]));
+    }
+
+    // Always include last point to ensure chart ends at actual endpoint
+    if (step > 1 && validElevations.isNotEmpty) {
+      final lastIndex = validElevations.length - 1;
+      if (!spots.any((spot) => spot.x == lastIndex.toDouble())) {
+        spots.add(FlSpot(lastIndex.toDouble(), validElevations[lastIndex]));
+      }
     }
 
     // Find min and max for better scaling

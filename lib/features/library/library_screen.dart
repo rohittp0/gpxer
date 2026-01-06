@@ -1,3 +1,4 @@
+import 'dart:io'; // For File operations
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -17,7 +18,7 @@ class LibraryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GPX Editor'),
+        title: const Text('RouteSmith'),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -72,20 +73,77 @@ class LibraryScreen extends ConsumerWidget {
                           itemCount: recentFiles.length,
                           itemBuilder: (context, index) {
                             final file = recentFiles[index];
-                            return ListTile(
-                              leading: const Icon(Icons.description),
-                              title: Text(file.displayName),
-                              subtitle: Text(
-                                '${_formatFileSize(file.fileSizeBytes)} • ${_formatDate(file.lastOpened)}',
+
+                            // Use file path + timestamp as unique key
+                            final key = Key('${file.path}_${file.lastOpened.millisecondsSinceEpoch}');
+
+                            return Dismissible(
+                              key: key,
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                color: Colors.red,
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                child: const Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
+                                ),
                               ),
-                              onTap: () {
-                                // TODO: Implement re-opening recent file
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Re-opening recent files coming soon'),
+                              confirmDismiss: (direction) async {
+                                // Show confirmation dialog before dismissing
+                                return await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text('Remove from recent files?'),
+                                    content: Text(
+                                      'Remove "${file.displayName}" from recent files?\n\n'
+                                      'This will not delete the actual file.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(true),
+                                        child: const Text('Remove'),
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
+                              onDismissed: (direction) async {
+                                // Remove from recent files
+                                await ref
+                                    .read(recentFilesControllerProvider.notifier)
+                                    .removeRecent(file);
+
+                                // Show snackbar with undo option
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Removed "${file.displayName}"'),
+                                      action: SnackBarAction(
+                                        label: 'Undo',
+                                        onPressed: () {
+                                          // Re-add the file to recents
+                                          ref
+                                              .read(recentFilesControllerProvider.notifier)
+                                              .addRecent(file);
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: ListTile(
+                                leading: const Icon(Icons.description),
+                                title: Text(file.displayName),
+                                subtitle: Text(
+                                  '${_formatFileSize(file.fileSizeBytes)} • ${_formatDate(file.lastOpened)}',
+                                ),
+                                onTap: () => _reopenRecentFile(context, ref, file),
+                              ),
                             );
                           },
                         );
@@ -176,7 +234,7 @@ class LibraryScreen extends ConsumerWidget {
       await ref.read(recentFilesControllerProvider.notifier).addRecent(recentEntry);
 
       if (context.mounted) {
-        context.go('/viewer');
+        context.push('/viewer');
       }
     } else {
       // 5. Failure: Show error dialog
@@ -194,6 +252,136 @@ class LibraryScreen extends ConsumerWidget {
             ],
           ),
         );
+      }
+    }
+  }
+
+  /// Reopen a recent file
+  Future<void> _reopenRecentFile(
+    BuildContext context,
+    WidgetRef ref,
+    RecentFileEntry recentFile,
+  ) async {
+    // 1. Check if file path exists
+    if (recentFile.path == null) {
+      _showError(context, 'File path not available');
+      return;
+    }
+
+    // 2. Check if file exists on disk
+    final file = File(recentFile.path!);
+    if (!await file.exists()) {
+      // File no longer exists - offer to remove from recents
+      final shouldRemove = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('File not found'),
+          content: Text(
+            'The file "${recentFile.displayName}" could not be found. '
+            'It may have been moved or deleted.\n\n'
+            'Remove it from recent files?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldRemove == true && context.mounted) {
+        await ref
+            .read(recentFilesControllerProvider.notifier)
+            .removeRecent(recentFile);
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    // 3. Show non-dismissible progress dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        title: Text('Opening GPX…'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Please wait...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // 4. Read file bytes
+      final bytes = await file.readAsBytes();
+
+      // 5. Parse using existing service
+      final ioService = ref.read(gpxIoServiceProvider);
+      final doc = await ioService.parseGpxFromBytes(
+        bytes: bytes,
+        displayName: recentFile.displayName,
+        sourcePath: recentFile.path,
+      );
+
+      // Close progress dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // 6. Handle result
+      if (doc != null) {
+        // Success: Set document and navigate to viewer
+        ref.read(gpxDocumentProvider.notifier).state = doc;
+
+        // Update "last opened" timestamp in recent files
+        final updatedEntry = RecentFileEntry(
+          displayName: recentFile.displayName,
+          path: recentFile.path,
+          lastOpened: DateTime.now(),
+          fileSizeBytes: bytes.length,
+        );
+        await ref
+            .read(recentFilesControllerProvider.notifier)
+            .addRecent(updatedEntry);
+
+        if (context.mounted) {
+          context.push('/viewer');
+        }
+      } else {
+        // Parsing failed
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Couldn\'t open file'),
+              content: const Text(
+                'This file is not valid GPX or could not be parsed.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close progress dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        _showError(context, 'Error reading file: $e');
       }
     }
   }
@@ -270,7 +458,7 @@ class LibraryScreen extends ConsumerWidget {
       ref.read(gpxDocumentProvider.notifier).state = doc;
 
       // Navigate to editor
-      context.go('/editor');
+      context.push('/editor');
     }
   }
 

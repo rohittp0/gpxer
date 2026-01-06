@@ -24,7 +24,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify that the Library screen is displayed
-    expect(find.text('GPX Editor'), findsOneWidget);
+    expect(find.text('RouteSmith'), findsOneWidget);
     expect(find.text('Open GPX'), findsOneWidget);
     expect(find.text('New GPX'), findsOneWidget);
   });

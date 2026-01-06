@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gpxer/app/providers.dart';
+import 'package:gpxer/domain/services/gpx_stats_service.dart';
 import 'package:gpxer/features/viewer/viewer_bottom_sheet.dart';
 import 'package:gpxer/features/viewer/point_callout.dart';
 
@@ -42,24 +43,24 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
+          onPressed: () => context.pop(),
         ),
         title: Text(doc.displayName),
         actions: [
           IconButton(
             icon: const Icon(Icons.info),
             tooltip: 'Details',
-            onPressed: () => context.go('/details'),
+            onPressed: () => context.push('/details'),
           ),
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: 'Edit',
-            onPressed: () => context.go('/editor'),
+            onPressed: () => context.push('/editor'),
           ),
           IconButton(
             icon: const Icon(Icons.share),
             tooltip: 'Export',
-            onPressed: () => context.go('/export'),
+            onPressed: () => context.push('/export'),
           ),
         ],
       ),
@@ -232,49 +233,11 @@ class _ViewerScreenState extends ConsumerState<ViewerScreen> {
 
   /// Calculate center point from bounds
   LatLng _calculateCenter(List<LatLng> points) {
-    if (points.isEmpty) return LatLng(0, 0);
-
-    double minLat = points[0].latitude;
-    double maxLat = points[0].latitude;
-    double minLon = points[0].longitude;
-    double maxLon = points[0].longitude;
-
-    for (final point in points) {
-      if (point.latitude < minLat) minLat = point.latitude;
-      if (point.latitude > maxLat) maxLat = point.latitude;
-      if (point.longitude < minLon) minLon = point.longitude;
-      if (point.longitude > maxLon) maxLon = point.longitude;
-    }
-
-    return LatLng((minLat + maxLat) / 2, (minLon + maxLon) / 2);
+    return GpxStatsService.calculateCenter(points);
   }
 
   /// Calculate appropriate zoom level
   double _calculateZoom(List<LatLng> points) {
-    if (points.length < 2) return 13.0;
-
-    double minLat = points[0].latitude;
-    double maxLat = points[0].latitude;
-    double minLon = points[0].longitude;
-    double maxLon = points[0].longitude;
-
-    for (final point in points) {
-      if (point.latitude < minLat) minLat = point.latitude;
-      if (point.latitude > maxLat) maxLat = point.latitude;
-      if (point.longitude < minLon) minLon = point.longitude;
-      if (point.longitude > maxLon) maxLon = point.longitude;
-    }
-
-    final latDiff = maxLat - minLat;
-    final lonDiff = maxLon - minLon;
-    final maxDiff = latDiff > lonDiff ? latDiff : lonDiff;
-
-    // Simple zoom calculation
-    if (maxDiff > 10) return 5.0;
-    if (maxDiff > 5) return 7.0;
-    if (maxDiff > 1) return 9.0;
-    if (maxDiff > 0.5) return 11.0;
-    if (maxDiff > 0.1) return 13.0;
-    return 15.0;
+    return GpxStatsService.calculateZoom(points);
   }
 }
